@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 // @ts-ignore
 import init, { start_ar_session } from '../rust_engine/pkg/rust_engine';
 
@@ -7,10 +7,6 @@ const App = () => {
     const [score, setScore] = useState(0);
     const [testMode, setTestMode] = useState(false);
     const [scanPrompt, setScanPrompt] = useState(true);
-
-    // Refs for scene interaction
-    const carRef = useRef<any>(null);
-    const sceneRef = useRef<any>(null);
 
     // Initialize Rust WASM on mount
     useEffect(() => {
