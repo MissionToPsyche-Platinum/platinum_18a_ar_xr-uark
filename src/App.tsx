@@ -1000,8 +1000,15 @@ const App = () => {
         const fixAspect = () => {
             const sceneEl = document.querySelector('a-scene') as any;
             if (!sceneEl) return;
-            const w = window.innerWidth;
-            const h = window.innerHeight;
+            // Read from the wrapper, not window.innerWidth/Height — on mobile the
+            // wrapper's position-fixed 100% resolves against the large viewport
+            // (URL bar excluded) while window.inner* is the small viewport, so
+            // mixing them sets the camera aspect to a value that doesn't match
+            // the canvas's CSS box and stretches whenever the URL bar collapses.
+            const wrapper = sceneEl.parentElement as HTMLElement | null;
+            const w = wrapper ? wrapper.clientWidth : window.innerWidth;
+            const h = wrapper ? wrapper.clientHeight : window.innerHeight;
+            if (!w || !h) return;
             if (sceneEl.camera) {
                 sceneEl.camera.aspect = w / h;
                 sceneEl.camera.updateProjectionMatrix();
