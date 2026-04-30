@@ -9,7 +9,7 @@ export default defineConfig({
     wasmPack('./rust_engine')
   ],
   // Update this to match your GitHub Pages repo slug (e.g. '/nasa-psyche-ar/'), or '/' for a custom domain.
-  base: '/psyche-ar-game/',
+  base: '/platinum_18a_ar_xr-uark/',
   server: {
     host: true,
   },
