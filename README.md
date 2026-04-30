@@ -73,6 +73,23 @@ Before you start, you need to install a few tools on your computer.
 
 ---
 
+## 🖨️ Printing the Asteroid Model
+
+The AR experience is designed to be played on top of a physical 3D-printed model of the Psyche asteroid.
+
+**Model dimensions (full scale):**
+- X: 610 mm
+- Y: 524 mm
+- Z: 432 mm
+
+Because the model is large, you will likely need to cut it into sections to fit your printer bed. You can split it however works best for your printer and reassemble the pieces after printing.
+
+**Recommended slicer settings:**
+- **Infill type**: Adaptive Cubic
+- **Infill density**: 8%
+
+---
+
 ## 📂 Project Structure (Where things live)
 
 *   **`src/`**: The **Frontend**.
