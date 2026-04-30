@@ -989,61 +989,6 @@ const App = () => {
         }
     }, [gameState]);
 
-    // A-Frame 1.6.0 in embedded mode initialises camera.aspect before the
-    // canvas CSS dimensions resolve on mobile, leaving it stuck at 1.0 (square)
-    // which stretches the scene vertically on portrait. Drive correction off
-    // a-scene's `loaded` + `renderstart` events and a ResizeObserver on the
-    // wrapper — timer-only retries race A-Frame's own late resize over slow
-    // (production / cellular) network paths.
-    useEffect(() => {
-        if (gameState !== 'WEB_GAME') return;
-        const fixAspect = () => {
-            const sceneEl = document.querySelector('a-scene') as any;
-            if (!sceneEl) return;
-            // Read from the wrapper, not window.innerWidth/Height — on mobile the
-            // wrapper's position-fixed 100% resolves against the large viewport
-            // (URL bar excluded) while window.inner* is the small viewport, so
-            // mixing them sets the camera aspect to a value that doesn't match
-            // the canvas's CSS box and stretches whenever the URL bar collapses.
-            const wrapper = sceneEl.parentElement as HTMLElement | null;
-            const w = wrapper ? wrapper.clientWidth : window.innerWidth;
-            const h = wrapper ? wrapper.clientHeight : window.innerHeight;
-            if (!w || !h) return;
-            if (sceneEl.camera) {
-                sceneEl.camera.aspect = w / h;
-                sceneEl.camera.updateProjectionMatrix();
-            }
-            if (sceneEl.renderer) {
-                sceneEl.renderer.setSize(w, h, false);
-            }
-        };
-        const sceneEl = document.querySelector('a-scene') as any;
-        let ro: ResizeObserver | null = null;
-        if (sceneEl) {
-            if (sceneEl.hasLoaded) fixAspect();
-            else sceneEl.addEventListener('loaded', fixAspect);
-            sceneEl.addEventListener('renderstart', fixAspect);
-            if (sceneEl.parentElement && typeof ResizeObserver !== 'undefined') {
-                ro = new ResizeObserver(fixAspect);
-                ro.observe(sceneEl.parentElement);
-            }
-        }
-        window.addEventListener('resize', fixAspect);
-        window.addEventListener('orientationchange', fixAspect);
-        const timers = [50, 150, 400, 1000, 2500].map(ms =>
-            window.setTimeout(fixAspect, ms)
-        );
-        return () => {
-            timers.forEach(window.clearTimeout);
-            window.removeEventListener('resize', fixAspect);
-            window.removeEventListener('orientationchange', fixAspect);
-            if (sceneEl) {
-                sceneEl.removeEventListener('loaded', fixAspect);
-                sceneEl.removeEventListener('renderstart', fixAspect);
-            }
-            if (ro) ro.disconnect();
-        };
-    }, [gameState]);
 
     const [score, setScore] = useState(0);
     const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
