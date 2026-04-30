@@ -2783,6 +2783,25 @@ const App = () => {
                             </section>
 
                             <section className="credits-section">
+                                <h3 className="credits-section-heading">Open Source Libraries</h3>
+                                <ul className="credits-list">
+                                    <li>A-Frame — MIT License</li>
+                                    <li>AR.js — MIT License</li>
+                                    <li>artoolkit5-js — LGPLv3</li>
+                                    <li>OpenCV.js — Apache License 2.0</li>
+                                    <li>QRCode.js — MIT License</li>
+                                    <li>Orbitron typeface — SIL OFL 1.1, Matt McInerney</li>
+                                </ul>
+                            </section>
+
+                            <section className="credits-section">
+                                <h3 className="credits-section-heading">3D Assets</h3>
+                                <ul className="credits-list">
+                                    <li>Psyche asteroid models — NASA / NASA JPL</li>
+                                </ul>
+                            </section>
+
+                            <section className="credits-section">
                                 <h3 className="credits-section-heading">Disclaimer</h3>
                                 <p className="credits-disclaimer">
                                     This work was created in partial fulfillment of University of Arkansas Capstone Course "CSCE 49603 - Capstone II". The work is a result of the Psyche Student Collaborations component of NASA's Psyche Mission (https://psyche.ssl.berkeley.edu)

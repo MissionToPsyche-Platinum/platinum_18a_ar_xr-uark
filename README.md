@@ -89,3 +89,18 @@ Before you start, you need to install a few tools on your computer.
 
 *   **"wasm-pack not found"**: Make sure you ran `cargo install wasm-pack` and restarted your terminal.
 *   **"WebXR not supported"**: You are likely trying to run AR mode on a desktop browser. Use "Desktop Test Mode" or open it on a mobile device.
+
+---
+
+## Credits & Acknowledgments
+
+### Open Source Libraries
+- **A-Frame** — MIT License — [aframevr/aframe](https://github.com/aframevr/aframe)
+- **AR.js** — MIT License — [AR-js-org/AR.js](https://github.com/AR-js-org/AR.js)
+- **artoolkit5-js** — GNU Lesser General Public License v3 (LGPLv3) — [AR-js-org/artoolkit5-js](https://github.com/AR-js-org/artoolkit5-js) *(bundled inside AR.js)*
+- **OpenCV.js** — Apache License 2.0 — [opencv/opencv](https://github.com/opencv/opencv)
+- **QRCode.js** by davidshimjs — MIT License — [davidshimjs/qrcodejs](https://github.com/davidshimjs/qrcodejs)
+- **Orbitron** typeface by Matt McInerney — SIL Open Font License 1.1 — [Google Fonts](https://fonts.google.com/specimen/Orbitron)
+
+### 3D Assets
+- Psyche asteroid models courtesy of NASA / NASA JPL
