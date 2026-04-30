@@ -1,13 +1,166 @@
 <!doctype html>
+<!-- App shell: A-Frame + AR.js; React mounts into #root.
+     ARToolKit C API (native) vs AR.js a-scene arjs= attribute:
+       arSetPatternDetectionMode(h, AR_MATRIX_CODE_DETECTION)
+         → detectionMode: mono_and_matrix (template + matrix; matrix uses AR_MATRIX_CODE_*)
+       arSetMatrixCodeType(h, AR_MATRIX_CODE_3x3_HAMMING63)
+         → matrixCodeType: 3x3_HAMMING63
+       arSetBorderSize(h, 0.24)  [border width per side as fraction of full marker width]
+         → patternRatio: 0.52  (inner pattern = 1 − 2×border; jsartoolkit setPattRatio)
+     labelingMode: black_region matches black-bordered markers on white (default).
+-->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>NASA Psyche AR</title>
-    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    <script type="module" crossorigin src="/platinum_18a_ar_xr-uark/assets/index-CEBAUACW.js"></script>
-    <link rel="stylesheet" crossorigin href="/platinum_18a_ar_xr-uark/assets/index-THZLcqbr.css">
+    <!--
+      Android AR compatibility shim. A-Frame + AR.js trigger the Fullscreen API
+      and screen.orientation.lock on mobile, which on Pixel/Android Chrome show
+      a fullscreen toast and intercept the first tap. AR.js then injects a
+      <video id="arjs-video"> + <canvas class="a-canvas"> sized to the camera-
+      stream / WebGL-backing-buffer pixel dimensions, expanding the layout past
+      the device viewport and forcing Chrome to pinch-zoom-out so every overlay
+      renders at quarter scale. This shim runs before aframe.min.js loads to:
+
+        1. Neutralize requestFullscreen + screen.orientation.lock as no-ops.
+        2. Auto-exit fullscreen if anything still sneaks past (1).
+        3. Pin <html>, <body>, #root, <a-scene>, .a-canvas, and <video> to the
+           device viewport via setProperty('width', '100vw', 'important') —
+           the only specificity level that beats A-Frame's inline pixel sizing.
+    -->
+    <script>
+      (function () {
+        var noopFs = function () { return Promise.resolve(); };
+
+        // Use defineProperty with a getter so the WebVR polyfill bundled inside
+        // aframe.min.js can't restore the native ref by reassigning to
+        // Element.prototype — every read returns our noop, every write is ignored.
+        var installNoop = function (proto) {
+          if (!proto) return;
+          ['requestFullscreen','webkitRequestFullscreen','mozRequestFullScreen','msRequestFullscreen']
+            .forEach(function (name) {
+              try {
+                if (!(name in proto)) return;
+                Object.defineProperty(proto, name, {
+                  configurable: true,
+                  enumerable: false,
+                  get: function () { return noopFs; },
+                  set: function () {}
+                });
+              } catch (_) {}
+            });
+        };
+        installNoop(window.Element && Element.prototype);
+        installNoop(window.HTMLElement && HTMLElement.prototype);
+        installNoop(window.HTMLCanvasElement && HTMLCanvasElement.prototype);
+        installNoop(window.HTMLDivElement && HTMLDivElement.prototype);
+        installNoop(window.HTMLBodyElement && HTMLBodyElement.prototype);
+
+        // screen.orientation.lock on Android also triggers the fullscreen toast.
+        try {
+          if (screen && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock = function () { return Promise.resolve(); };
+          }
+        } catch (_) {}
+
+        // Safety net: if anything still enters fullscreen, exit immediately.
+        var onFsChange = function () {
+          var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+          if (fsEl) {
+            try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (_) {}
+          }
+          setTimeout(function () { window.dispatchEvent(new Event('resize')); }, 50);
+        };
+        document.addEventListener('fullscreenchange', onFsChange);
+        document.addEventListener('webkitfullscreenchange', onFsChange);
+
+        // Layout enforcer. A-Frame sizes <canvas class="a-canvas"> via inline
+        // style at the WebGL backing-buffer pixels, AR.js sizes <video> at the
+        // camera-stream pixels and applies a NEGATIVE marginLeft/marginTop to
+        // center the wider-than-viewport video. setProperty(...,'important')
+        // is the highest CSS specificity level — it beats anything either lib
+        // applies inline.
+        var enforcePin = function (el) {
+          if (!el || !el.style) return;
+          try {
+            el.style.setProperty('position', 'fixed', 'important');
+            el.style.setProperty('top', '0', 'important');
+            el.style.setProperty('left', '0', 'important');
+            el.style.setProperty('width', '100vw', 'important');
+            el.style.setProperty('height', '100dvh', 'important');
+            el.style.setProperty('max-width', '100vw', 'important');
+            el.style.setProperty('max-height', '100dvh', 'important');
+            el.style.setProperty('margin', '0', 'important');
+            el.style.setProperty('margin-left', '0', 'important');
+            el.style.setProperty('margin-top', '0', 'important');
+            el.style.setProperty('margin-right', '0', 'important');
+            el.style.setProperty('margin-bottom', '0', 'important');
+          } catch (_) {}
+        };
+        var enforceAll = function () {
+          // Only run in AR mode. React adds 'ar-active' to <html> on AR_MODE
+          // entry and removes it on exit — WEB_GAME never gets this class so
+          // A-Frame's natural layout (correct aspect, no stretching) is kept.
+          if (!document.documentElement.classList.contains('ar-active')) return;
+          var canvas = document.querySelector('canvas.a-canvas');
+          var scene = document.querySelector('a-scene');
+          var video = document.querySelector('video');
+          if (canvas) enforcePin(canvas);
+          if (scene) enforcePin(scene);
+          if (video) {
+            enforcePin(video);
+            video.style.setProperty('object-fit', 'cover', 'important');
+            video.style.setProperty('z-index', '-1', 'important');
+          }
+          enforcePin(document.documentElement);
+          enforcePin(document.body);
+          var root = document.getElementById('root');
+          if (root) enforcePin(root);
+        };
+        // RAF-pin every frame for 8s (catches every A-Frame resize tick during
+        // init), then a 1Hz safety net forever, plus on resize/orientation.
+        var rafCount = 0;
+        var rafEnforce = function () {
+          enforceAll();
+          if (++rafCount < 480) requestAnimationFrame(rafEnforce);
+        };
+        requestAnimationFrame(rafEnforce);
+        setInterval(enforceAll, 1000);
+        window.addEventListener('resize', enforceAll);
+        window.addEventListener('orientationchange', enforceAll);
+        // Catch A-Frame inserting <a-scene>/<canvas>/<video> after load — only
+        // in AR mode (gated by the same html.ar-active class as enforceAll).
+        new MutationObserver(function (mutations) {
+          if (!document.documentElement.classList.contains('ar-active')) return;
+          mutations.forEach(function (m) {
+            if (!m.addedNodes) return;
+            Array.prototype.forEach.call(m.addedNodes, function (n) {
+              if (!n || n.nodeType !== 1) return;
+              var tag = (n.tagName || '').toLowerCase();
+              if (tag === 'video' || tag === 'a-scene' || tag === 'canvas' ||
+                  (n.classList && n.classList.contains('a-canvas'))) {
+                enforcePin(n);
+                if (tag === 'video') {
+                  n.style.setProperty('object-fit', 'cover', 'important');
+                  n.style.setProperty('z-index', '-1', 'important');
+                }
+              }
+            });
+          });
+        }).observe(document.documentElement, { childList: true, subtree: true });
+      })();
+    </script>
+    <script src="/Users/matca/Documents/Dev/Git/platinum_18a_ar_xr-uark/vendor/aframe.min.js"></script>
+    <script src="/Users/matca/Documents/Dev/Git/platinum_18a_ar_xr-uark/vendor/aframe-ar.js"></script>
+    <!--
+      OpenCV.js — used client-side to detect the gray silhouette of the 3D-printed asteroid in the
+      AR camera feed. We load it async so the UI can mount first, then wire `cv.onRuntimeInitialized`
+      when it's ready. File served from public/vendor/opencv.js so builds are fully offline.
+    -->
+    <script async src="/Users/matca/Documents/Dev/Git/platinum_18a_ar_xr-uark/vendor/opencv.js"></script>
+    <script type="module" crossorigin src="/Users/matca/Documents/Dev/Git/platinum_18a_ar_xr-uark/assets/index-CEnVQcH2.js"></script>
+    <link rel="stylesheet" crossorigin href="/Users/matca/Documents/Dev/Git/platinum_18a_ar_xr-uark/assets/index-CVjbQ3Fw.css">
   </head>
   <body>
     <div id="root"></div>
