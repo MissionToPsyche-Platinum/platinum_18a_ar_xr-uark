@@ -991,10 +991,10 @@ const App = () => {
 
     // A-Frame 1.6.0 in embedded mode initialises camera.aspect before the
     // canvas CSS dimensions resolve on mobile, leaving it stuck at 1.0 (square)
-    // which stretches the scene vertically on portrait. Dispatching window
-    // resize alone doesn't always retake — directly set camera.aspect +
-    // renderer.setSize on the THREE objects A-Frame exposes, retrying until
-    // the scene is fully constructed.
+    // which stretches the scene vertically on portrait. Drive correction off
+    // a-scene's `loaded` + `renderstart` events and a ResizeObserver on the
+    // wrapper — timer-only retries race A-Frame's own late resize over slow
+    // (production / cellular) network paths.
     useEffect(() => {
         if (gameState !== 'WEB_GAME') return;
         const fixAspect = () => {
@@ -1010,10 +1010,32 @@ const App = () => {
                 sceneEl.renderer.setSize(w, h, false);
             }
         };
+        const sceneEl = document.querySelector('a-scene') as any;
+        let ro: ResizeObserver | null = null;
+        if (sceneEl) {
+            if (sceneEl.hasLoaded) fixAspect();
+            else sceneEl.addEventListener('loaded', fixAspect);
+            sceneEl.addEventListener('renderstart', fixAspect);
+            if (sceneEl.parentElement && typeof ResizeObserver !== 'undefined') {
+                ro = new ResizeObserver(fixAspect);
+                ro.observe(sceneEl.parentElement);
+            }
+        }
+        window.addEventListener('resize', fixAspect);
+        window.addEventListener('orientationchange', fixAspect);
         const timers = [50, 150, 400, 1000, 2500].map(ms =>
             window.setTimeout(fixAspect, ms)
         );
-        return () => timers.forEach(window.clearTimeout);
+        return () => {
+            timers.forEach(window.clearTimeout);
+            window.removeEventListener('resize', fixAspect);
+            window.removeEventListener('orientationchange', fixAspect);
+            if (sceneEl) {
+                sceneEl.removeEventListener('loaded', fixAspect);
+                sceneEl.removeEventListener('renderstart', fixAspect);
+            }
+            if (ro) ro.disconnect();
+        };
     }, [gameState]);
 
     const [score, setScore] = useState(0);
