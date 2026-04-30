@@ -1,0 +1,3 @@
+# Required for WebXR APIs used by AR session.
+[build]
+rustflags = ["--cfg=web_sys_unstable_apis"]
