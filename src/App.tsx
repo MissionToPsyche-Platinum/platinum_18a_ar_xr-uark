@@ -977,6 +977,23 @@ function registerHeightmapTerrainComponent() {
     _terrainRegistered = true;
 }
 
+let arJsLoadPromise: Promise<void> | null = null;
+const loadArJs = (): Promise<void> => {
+    if (arJsLoadPromise) return arJsLoadPromise;
+    arJsLoadPromise = new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector('script[data-arjs-loader="1"]');
+        if (existing) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = '/vendor/aframe-ar.js';
+        s.async = false;
+        s.dataset.arjsLoader = '1';
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load aframe-ar.js'));
+        document.head.appendChild(s);
+    });
+    return arJsLoadPromise;
+};
+
 const App = () => {
     const [gameState, setGameState] = useState('MENU');
 
@@ -1502,6 +1519,12 @@ const App = () => {
             setIntroPopupCanClose(false);
             introLockoutTimerRef.current = window.setTimeout(() => setIntroPopupCanClose(true), 3500);
         } else if (mode === 'ar') {
+            try {
+                await loadArJs();
+            } catch (e) {
+                console.error('Failed to load AR.js', e);
+                return;
+            }
             // Fresh tap-to-map flow each mission — user picks a new play zone on the gray face.
             setArSetupPhase('AWAIT_CENTER');
             terrainRef.current = null;
