@@ -1,5 +1,11 @@
 # NASA Psyche AR Mission
 
+## ▶️ Play it now (no install required)
+
+The latest build is live at **https://missiontopsyche-platinum.github.io/platinum_18a_ar_xr-uark/** — open it on your phone or desktop and you can play the web game (and try the AR experience if you have a printed marker) without cloning or building anything locally. The setup steps below are only needed if you want to develop or modify the project.
+
+---
+
 ## 🚀 Welcome to the Project!
 
 This is an Augmented Reality (AR) web application designed to simulate the NASA Psyche mission. It allows users to drive a virtual rover on a physical surface using their phone's camera.
