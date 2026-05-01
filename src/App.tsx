@@ -984,7 +984,7 @@ const loadArJs = (): Promise<void> => {
         const existing = document.querySelector('script[data-arjs-loader="1"]');
         if (existing) { resolve(); return; }
         const s = document.createElement('script');
-        s.src = '/vendor/aframe-ar.js';
+        s.src = `${import.meta.env.BASE_URL}vendor/aframe-ar.js`;
         s.async = false;
         s.dataset.arjsLoader = '1';
         s.onload = () => resolve();
